@@ -430,8 +430,8 @@
     const urlCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=224039655&single=true&output=csv';
     const urlAgendaCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=355922745&single=true&output=csv';
     
-    // Pastikan menggunakan link publikasi web CSV sheet KAS yang valid (atau link publikasi spreadsheet utama)
-    const urlKasCSV = 'https://docs.google.com/spreadsheets/d/1_-b0f0Cn49yX65dbRw7FT5zwFl_YILycYbLMZzpspSk/export?format=csv&gid=0';
+    // Menggunakan endpoint Google Visualization API (gviz/tq) agar langsung tembus tanpa kendala CORS / Publish Web
+    const urlKasCSV = 'https://docs.google.com/spreadsheets/d/1_-b0f0Cn49yX65dbRw7FT5zwFl_YILycYbLMZzpspSk/gviz/tq?tqx=out:csv&sheet=KAS';
 
     let jadwal = { "SUBUH": "04:39", "SYURUQ": "05:45", "ZUHUR": "11:45", "ASHAR": "15:07", "MAGHRIB": "17:41", "ISYA": "18:52" }; 
     let timerSholat; let modeAktif = false;
@@ -536,7 +536,7 @@
                 let saldoAkhir = 0;
 
                 const sekarang = new Date();
-                const blnSekarang = sekarang.getMonth(); // 0-11 (Oktober = 9)
+                const blnSekarang = sekarang.getMonth(); // 0-11
                 const thnSekarang = sekarang.getFullYear(); // 2026
 
                 for (let i = 1; i < rowsKas.length; i++) {
