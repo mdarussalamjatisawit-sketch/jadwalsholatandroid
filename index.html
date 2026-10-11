@@ -429,8 +429,6 @@
     
     const urlCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=224039655&single=true&output=csv';
     const urlAgendaCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=355922745&single=true&output=csv';
-    
-    // Gunakan URL Publikasi CSV dari Spreadsheet baru Anda di sini:
     const urlKasCSV = 'https://docs.google.com/spreadsheets/d/1_-b0f0Cn49yX65dbRw7FT5zwFl_YILycYbLMZzpspSk/export?format=csv&gid=0';
 
     let jadwal = { "SUBUH": "04:39", "SYURUQ": "05:45", "ZUHUR": "11:45", "ASHAR": "15:07", "MAGHRIB": "17:41", "ISYA": "18:52" }; 
@@ -554,10 +552,10 @@
                                 let tglTrans = new Date(y, m, d);
 
                                 if (y === thnSekarang && m === blnSekarang) {
-                                    masukBulanIni += masuk;
-                                    keluarBulanIni += keluar;
+                                    if (!isNaN(masuk)) masukBulanIni += masuk;
+                                    if (!isNaN(keluar)) keluarBulanIni += keluar;
                                 } else if (tglTrans < new Date(thnSekarang, blnSekarang, 1)) {
-                                    saldoBulanLalu = saldo;
+                                    if (!isNaN(saldo)) saldoBulanLalu = saldo;
                                 }
                                 tglTerakhir = `${d.toString().padStart(2,'0')}/${(m+1).toString().padStart(2,'0')}/${y}`;
                             }
