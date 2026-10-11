@@ -427,6 +427,7 @@
     const DURASI_IQOMAH = 720; 
     const DURASI_SHOLAT = 30;
     
+    // URL CSV Google Spreadsheet
     const urlCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=224039655&single=true&output=csv';
     const urlAgendaCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=355922745&single=true&output=csv';
     const urlKasCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=0&single=true&output=csv';
@@ -486,6 +487,7 @@
 
     // MENGAMBIL DATA DARI CSV SPREADSHEET
     async function muatData() {
+        // 1. DATA JAM SHOLAT & HIJRIAH
         try {
             const res = await fetch(urlCSV + '&t=' + Date.now());
             const text = await res.text();
@@ -494,7 +496,6 @@
             if (rows.length >= 2) {
                 const b2 = rows[1]; 
                 
-                // 1. AMBIL SEMUA ELEMENT FORMAT JAM (JADWAL SHOLAT)
                 const jamDitemukan = [];
                 const regexJam = /^\d{1,2}[:.]\d{2}$/;
                 b2.forEach(cell => {
@@ -521,7 +522,6 @@
                 document.getElementById('sh-maghrib').innerText = jadwal.MAGHRIB; 
                 document.getElementById('sh-isya').innerText    = jadwal.ISYA;
 
-                // 2. PARSING TANGGAL HIJRIAH
                 let teksHijriah = "";
                 b2.forEach(cell => {
                     let cVal = (cell || "").trim();
@@ -535,52 +535,64 @@
             }
         } catch (e) { console.log("CSV Utama Error", e); }
 
-        // 3. KEUANGAN (Mengambil data dari Sheet KAS / BUKU KAS)
+        // 2. DATA KEUANGAN (DIBACA SECARA DINAMIS DARI SHEET KAS)
         try {
             const resKas = await fetch(urlKasCSV + '&t=' + Date.now());
             const textKas = await resKas.text();
             if (!textKas.includes("<html")) {
                 const rowsKas = parseCSV(textKas);
-                if (rowsKas.length >= 2) {
-                    // Baris pertama (index 1) adalah Kas bulan sebelumnya
-                    let saldoLalu = 0;
-                    let totalMasuk = 0;
-                    let totalKeluar = 0;
-                    let saldoAkhir = 0;
-                    let tglUpdate = "-";
+                let tglTerakhir = "-";
+                let saldoBulanLalu = 0;
+                let masukBulanIni = 0;
+                let keluarBulanIni = 0;
+                let saldoAkhir = 0;
 
-                    for (let i = 1; i < rowsKas.length; i++) {
-                        let r = rowsKas[i];
-                        if (r && r.length >= 6) {
-                            let tgl = (r[1] || "").trim();
-                            let ket = (r[2] || "").trim().toLowerCase();
-                            let masuk = parseFloat((r[3] || "0").replace(/[^0-9.-]+/g,"")) || 0;
-                            let keluar = parseFloat((r[4] || "0").replace(/[^0-9.-]+/g,"")) || 0;
-                            let saldo = parseFloat((r[5] || "0").replace(/[^0-9.-]+/g,"")) || 0;
+                const sekarang = new Date();
+                const blnSekarang = sekarang.getMonth(); // 0-11
+                const thnSekarang = sekarang.getFullYear();
 
-                            if (i === 1) {
-                                saldoLalu = masuk > 0 ? masuk : saldo;
-                            } else {
-                                if (masuk > 0) totalMasuk += masuk;
-                                if (keluar > 0) totalKeluar += keluar;
+                for (let i = 1; i < rowsKas.length; i++) {
+                    let r = rowsKas[i];
+                    if (r && r.length >= 6) {
+                        let tglStr = (r[1] || "").trim();
+                        let masuk = parseFloat((r[3] || "0").replace(/[^0-9.-]+/g,"")) || 0;
+                        let keluar = parseFloat((r[4] || "0").replace(/[^0-9.-]+/g,"")) || 0;
+                        let saldo = parseFloat((r[5] || "0").replace(/[^0-9.-]+/g,"")) || 0;
+
+                        if (tglStr) {
+                            let p = tglStr.split('-');
+                            if (p.length === 3) {
+                                let y = parseInt(p[0]), m = parseInt(p[1]) - 1, d = parseInt(p[2]);
+                                let tglTrans = new Date(y, m, d);
+
+                                // Cek Transaksi Bulan Ini vs Bulan Lalu
+                                if (y === thnSekarang && m === blnSekarang) {
+                                    masukBulanIni += masuk;
+                                    keluarBulanIni += keluar;
+                                } else if (tglTrans < new Date(thnSekarang, blnSekarang, 1)) {
+                                    saldoBulanLalu = saldo;
+                                }
+
+                                // Format Tanggal Indonesia (DD/MM/YYYY)
+                                tglTerakhir = `${d.toString().padStart(2,'0')}/${(m+1).toString().padStart(2,'0')}/${y}`;
                             }
-                            if (tgl) tglUpdate = tgl;
-                            saldoAkhir = saldo;
                         }
+                        if (saldo > 0) saldoAkhir = saldo;
                     }
-
-                    // Format Rupiah
-                    const formatRp = (val) => 'Rp' + val.toLocaleString('id-ID');
-
-                    document.getElementById('kas-tgl').innerText = tglUpdate;
-                    document.getElementById('kas-saldo-lalu').innerText = formatRp(saldoLalu);
-                    document.getElementById('kas-in').innerText = formatRp(totalMasuk);
-                    document.getElementById('kas-out').innerText = formatRp(totalKeluar);
-                    document.getElementById('kas-saldo').innerText = formatRp(saldoAkhir);
                 }
+
+                // Format Rupiah
+                const formatRp = (val) => 'Rp' + Math.round(val).toLocaleString('id-ID');
+
+                document.getElementById('kas-tgl').innerText = tglTerakhir;
+                document.getElementById('kas-saldo-lalu').innerText = formatRp(saldoBulanLalu);
+                document.getElementById('kas-in').innerText = formatRp(masukBulanIni);
+                document.getElementById('kas-out').innerText = formatRp(keluarBulanIni);
+                document.getElementById('kas-saldo').innerText = formatRp(saldoAkhir);
             }
         } catch (e) { console.log("CSV Kas Error", e); }
 
+        // 3. DATA AGENDA
         try {
             const resAgenda = await fetch(urlAgendaCSV + '&t=' + Date.now());
             const textAgenda = await resAgenda.text();
