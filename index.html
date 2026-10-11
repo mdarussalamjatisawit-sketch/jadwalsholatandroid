@@ -166,23 +166,23 @@
         .tbl-keuangan {
             width: 100%;
             border-collapse: collapse;
-            font-size: clamp(0.8rem, 1.7vw, 1.05rem);
+            font-size: clamp(0.75rem, 1.6vw, 1rem);
             font-weight: 800;
         }
         .tbl-keuangan td {
-            padding: 5px 8px;
+            padding: 4px 8px;
             border-bottom: 1px solid rgba(0,0,0,0.15);
         }
         
         .tbl-keuangan tr.total-row td {
-            font-size: clamp(0.9rem, 1.9vw, 1.15rem);
+            font-size: clamp(0.85rem, 1.8vw, 1.1rem);
             color: #000000 !important;
             font-weight: 900;
             background-color: #ffd700 !important;
             border-top: 2px solid #000;
             border-bottom: none;
-            padding-top: 7px;
-            padding-bottom: 7px;
+            padding-top: 6px;
+            padding-bottom: 6px;
         }
         .tbl-agenda { 
             width: 100%; 
@@ -429,14 +429,13 @@
     
     const urlCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=224039655&single=true&output=csv';
     const urlAgendaCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=355922745&single=true&output=csv';
-    
-    // Menggunakan endpoint Google Visualization API (gviz/tq) agar langsung tembus tanpa kendala CORS / Publish Web
-    const urlKasCSV = 'https://docs.google.com/spreadsheets/d/1_-b0f0Cn49yX65dbRw7FT5zwFl_YILycYbLMZzpspSk/gviz/tq?tqx=out:csv&sheet=KAS';
+    const urlKasCSV = 'https://docs.google.com/spreadsheets/d/1_-b0f0Cn49yX65dbRw7FT5zwFl_YILycYbLMZzpspSk/export?format=csv&gid=0';
 
     let jadwal = { "SUBUH": "04:39", "SYURUQ": "05:45", "ZUHUR": "11:45", "ASHAR": "15:07", "MAGHRIB": "17:41", "ISYA": "18:52" }; 
     let timerSholat; let modeAktif = false;
     let daftarAgenda = [];
 
+    // PARSER CSV
     function parseCSV(text) {
         let p = '', c = '', r = [];
         let q = false;
@@ -459,6 +458,7 @@
         return r;
     }
 
+    // ANIMASI HEADER
     function jalankanAnimasiHeader() {
         const wadah = document.getElementById('header-animasi');
         const kata = "MASJID DARUSSALAM"; wadah.innerHTML = "";   
@@ -475,6 +475,7 @@
     }    
     jalankanAnimasiHeader();
 
+    // ROTASI RUNNING TEXT
     let teksIdx = 1;
     setInterval(() => {
         document.getElementById('run-1').classList.remove('show-msg');
@@ -483,19 +484,26 @@
         setTimeout(() => { document.getElementById('run-' + teksIdx).classList.add('show-msg'); }, 1000);
     }, 4000);
 
+    // MENGAMBIL DATA DARI CSV SPREADSHEET
     async function muatData() {
         try {
             const res = await fetch(urlCSV + '&t=' + Date.now());
             const text = await res.text();
             const rows = parseCSV(text);
+            
             if (rows.length >= 2) {
                 const b2 = rows[1]; 
+                
+                // 1. AMBIL SEMUA ELEMENT FORMAT JAM (JADWAL SHOLAT)
                 const jamDitemukan = [];
                 const regexJam = /^\d{1,2}[:.]\d{2}$/;
                 b2.forEach(cell => {
                     let strVal = (cell || "").trim();
-                    strVal.split(/\s+/).forEach(sp => {
-                        if (regexJam.test(sp)) jamDitemukan.push(sp.replace('.', ':'));
+                    let subParts = strVal.split(/\s+/);
+                    subParts.forEach(sp => {
+                        if (regexJam.test(sp)) {
+                            jamDitemukan.push(sp.replace('.', ':'));
+                        }
                     });
                 });
                 if (jamDitemukan.length >= 6) {
@@ -513,6 +521,7 @@
                 document.getElementById('sh-maghrib').innerText = jadwal.MAGHRIB; 
                 document.getElementById('sh-isya').innerText    = jadwal.ISYA;
 
+                // 2. PARSING TANGGAL HIJRIAH
                 let teksHijriah = "";
                 b2.forEach(cell => {
                     let cVal = (cell || "").trim();
@@ -520,10 +529,13 @@
                         teksHijriah += " " + cVal;
                     }
                 });
-                if (teksHijriah.trim()) document.getElementById('tgl-hijriah').innerText = teksHijriah.trim();
+                if (teksHijriah.trim()) {
+                    document.getElementById('tgl-hijriah').innerText = teksHijriah.trim();
+                }
             }
         } catch (e) { console.log("CSV Utama Error", e); }
 
+        // 3. MENGAMBIL DATA KEUANGAN LANGSUNG DARI SHEET KAS (BUKU KAS.xlsx)
         try {
             const resKas = await fetch(urlKasCSV + '&t=' + Date.now());
             const textKas = await resKas.text();
@@ -578,23 +590,22 @@
         try {
             const resAgenda = await fetch(urlAgendaCSV + '&t=' + Date.now());
             const textAgenda = await resAgenda.text();
-            if (!textAgenda.includes("<html")) {
-                const rowsAgenda = parseCSV(textAgenda);
-                daftarAgenda = [];
-                for (let i = 1; i < rowsAgenda.length; i++) {
-                    const r = rowsAgenda[i];
-                    if (r && r.length >= 4) {
-                        const tglVal = (r[1] || "").trim();
-                        const jamVal = (r[2] || "").trim();
-                        const kgtVal = (r[3] || "").trim();
-                        const pgsVal = (r[4] || "-").trim();
-                        if (tglVal && kgtVal && !tglVal.toLowerCase().includes("tanggal")) {
-                            daftarAgenda.push({ tgl: tglVal, jam: jamVal || "00.00.00", kegiatan: kgtVal, pengisi: pgsVal });
-                        }
+            if (textAgenda.includes("<html")) return;
+            const rowsAgenda = parseCSV(textAgenda);
+            daftarAgenda = [];
+            for (let i = 1; i < rowsAgenda.length; i++) {
+                const r = rowsAgenda[i];
+                if (r && r.length >= 4) {
+                    const tglVal = (r[1] || "").trim();
+                    const jamVal = (r[2] || "").trim();
+                    const kgtVal = (r[3] || "").trim();
+                    const pgsVal = (r[4] || "-").trim();
+                    if (tglVal && kgtVal && !tglVal.toLowerCase().includes("tanggal")) {
+                        daftarAgenda.push({ tgl: tglVal, jam: jamVal || "00.00.00", kegiatan: kgtVal, pengisi: pgsVal });
                     }
                 }
-                perbaruiTabelAgenda();
             }
+            perbaruiTabelAgenda();
         } catch (e) { console.log("CSV Agenda Error", e); }
     }
 
@@ -607,7 +618,10 @@
         const y = pTgl[2];
         const jamBersih = (jamStr || "00.00.00").trim().replace(/\./g, ':');
         const pJam = jamBersih.split(':');
-        return new Date(`${y}-${m}-${d}T${(pJam[0]||"00").padStart(2,'0')}:${(pJam[1]||"00").padStart(2,'0')}:${(pJam[2]||"00").padStart(2,'0')}`);
+        const hh = (pJam[0] || "00").padStart(2, '0');
+        const mm = (pJam[1] || "00").padStart(2, '0');
+        const ss = (pJam[2] || "00").padStart(2, '0');
+        return new Date(`${y}-${m}-${d}T${hh}:${mm}:${ss}`);
     }
 
     function perbaruiTabelAgenda() {
@@ -670,7 +684,9 @@
                 const parts = jadwal[s].split(':');
                 const detikJadwal = parseInt(parts[0], 10) * 3600 + parseInt(parts[1], 10) * 60;
                 let selisih = detikJadwal - detikSekarang;
-                if (selisih <= 0) selisih += 86400; 
+                if (selisih <= 0) {
+                    selisih += 86400; 
+                }
                 if (selisih < selisihTerkecil) {
                     selisihTerkecil = selisih;
                     mendatang = s;
@@ -679,8 +695,11 @@
         });
         urutan.forEach(s => { 
             const box = document.getElementById('box-' + s);
-            if (s === mendatang) box.classList.add('sholat-mendatang');
-            else box.classList.remove('sholat-mendatang');
+            if (s === mendatang) {
+                box.classList.add('sholat-mendatang');
+            } else {
+                box.classList.remove('sholat-mendatang');
+            }
         });
         if (now.getSeconds() === 0) perbaruiTabelAgenda();
         for (let s in jadwal) {
