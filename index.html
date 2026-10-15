@@ -175,12 +175,10 @@
             padding: 5px 8px;
             border-bottom: 1px solid rgba(0,0,0,0.15);
         }
-        /* Kolom 1 (Label) selebar 48% */
         .tbl-keuangan td:nth-child(1) {
             width: 48%;
             text-align: left;
         }
-        /* Kolom 2 (Nilai/Nominal) selebar 52% rata kanan */
         .tbl-keuangan td:nth-child(2) {
             width: 52%;
             text-align: right;
@@ -469,6 +467,14 @@
         return r;
     }
 
+    // Fungsi helper untuk membersihkan format angka Indonesia (menghilangkan titik ribuan)
+    function parseNumber(val) {
+        if (!val) return 0;
+        let clean = val.toString().replace(/Rp/g, '').replace(/\./g, '').replace(/,/g, '.').trim();
+        let num = parseFloat(clean);
+        return isNaN(num) ? 0 : num;
+    }
+
     function jalankanAnimasiHeader() {
         const wadah = document.getElementById('header-animasi');
         const kata = "MASJID DARUSSALAM"; wadah.innerHTML = "";   
@@ -494,7 +500,6 @@
     }, 4000);
 
     async function muatData() {
-        // Atur Per Tanggal sesuai tanggal hari ini secara otomatis
         const sekarangSys = new Date();
         const tglHariIni = `${sekarangSys.getDate().toString().padStart(2,'0')}/${(sekarangSys.getMonth()+1).toString().padStart(2,'0')}/${sekarangSys.getFullYear()}`;
         document.getElementById('kas-tgl').innerText = tglHariIni;
@@ -563,9 +568,9 @@
                     let r = rowsKas[i];
                     if (r && r.length >= 6) {
                         let tglStr = (r[1] || "").trim();
-                        let masuk = parseFloat((r[3] || "0").replace(/[^0-9.-]+/g,"")) || 0;
-                        let keluar = parseFloat((r[4] || "0").replace(/[^0-9.-]+/g,"")) || 0;
-                        let saldo = parseFloat((r[5] || "0").replace(/[^0-9.-]+/g,"")) || 0;
+                        let masuk = parseNumber(r[3]);
+                        let keluar = parseNumber(r[4]);
+                        let saldo = parseNumber(r[5]);
 
                         if (tglStr && tglStr !== "") {
                             let parts = tglStr.split(/[-/]/);
