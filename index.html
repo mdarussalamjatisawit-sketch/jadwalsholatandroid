@@ -435,6 +435,8 @@
     
     const urlCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=224039655&single=true&output=csv';
     const urlAgendaCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=355922745&single=true&output=csv';
+    
+    // Link CSV khusus untuk sheet KAS (gid=0 atau sesuai sheet KAS Anda)
     const urlKasCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=0&single=true&output=csv';
 
     let jadwal = { "SUBUH": "04:39", "SYURUQ": "05:45", "ZUHUR": "11:45", "ASHAR": "15:07", "MAGHRIB": "17:41", "ISYA": "18:52" }; 
@@ -534,7 +536,7 @@
             }
         } catch (e) { console.log("CSV Utama Error", e); }
 
-        // MENGAMBIL DATA KEUANGAN LANGSUNG DARI SHEET KAS (BARIS DEMI BARIS)
+        // AMBIL DAN HITUNG KEUANGAN LANGSUNG DARI SHEET KAS (BARIS DATA KAS)
         try {
             const resKas = await fetch(urlKasCSV + '&t=' + Date.now());
             const textKas = await resKas.text();
@@ -547,7 +549,7 @@
                 let saldoAkhir = 0;
 
                 const sekarang = new Date();
-                const blnSekarang = sekarang.getMonth(); // 0-11 (Oktober = 9)
+                const blnSekarang = sekarang.getMonth(); // 0-11
                 const thnSekarang = sekarang.getFullYear(); // 2026
 
                 for (let i = 1; i < rowsKas.length; i++) {
@@ -559,16 +561,17 @@
                         let saldo = parseFloat((r[5] || "0").replace(/[^0-9.-]+/g,"")) || 0;
 
                         if (tglStr) {
-                            let p = tglStr.split('-');
-                            if (p.length === 3) {
-                                let y = parseInt(p[0]), m = parseInt(p[1]) - 1, d = parseInt(p[2]);
-                                let tglTrans = new Date(y, m, d);
+                            let tglTrans = new Date(tglStr);
+                            if (!isNaN(tglTrans.getTime())) {
+                                let y = tglTrans.getFullYear();
+                                let m = tglTrans.getMonth();
+                                let d = tglTrans.getDate();
 
                                 if (y === thnSekarang && m === blnSekarang) {
                                     if (!isNaN(masuk)) masukBulanIni += masuk;
                                     if (!isNaN(keluar)) keluarBulanIni += keluar;
                                 } else if (tglTrans < new Date(thnSekarang, blnSekarang, 1)) {
-                                    if (!isNaN(saldo)) saldoBulanLalu = saldo;
+                                    if (!isNaN(saldo) && saldo > 0) saldoBulanLalu = saldo;
                                 }
                                 tglTerakhir = `${d.toString().padStart(2,'0')}/${(m+1).toString().padStart(2,'0')}/${y}`;
                             }
