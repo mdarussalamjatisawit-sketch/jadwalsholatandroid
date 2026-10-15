@@ -436,8 +436,8 @@
     const urlCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=224039655&single=true&output=csv';
     const urlAgendaCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=355922745&single=true&output=csv';
     
-    // Link CSV khusus untuk sheet KAS (gid=0 atau sesuai sheet KAS Anda)
-    const urlKasCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=0&single=true&output=csv';
+    // Menggunakan endpoint gviz/tq untuk sheet KAS agar langsung tembus tanpa masalah Publish Web
+    const urlKasGViz = 'https://docs.google.com/spreadsheets/d/1_-b0f0Cn49yX65dbRw7FT5zwFl_YILycYbLMZzpspSk/gviz/tq?tqx=out:csv&sheet=KAS';
 
     let jadwal = { "SUBUH": "04:39", "SYURUQ": "05:45", "ZUHUR": "11:45", "ASHAR": "15:07", "MAGHRIB": "17:41", "ISYA": "18:52" }; 
     let timerSholat; let modeAktif = false;
@@ -536,9 +536,9 @@
             }
         } catch (e) { console.log("CSV Utama Error", e); }
 
-        // AMBIL DAN HITUNG KEUANGAN LANGSUNG DARI SHEET KAS (BARIS DATA KAS)
+        // MENGAMBIL DAN MENGHITUNG DATA KEUANGAN DARI SHEET KAS MENGGUNAKAN GVIZ
         try {
-            const resKas = await fetch(urlKasCSV + '&t=' + Date.now());
+            const resKas = await fetch(urlKasGViz + '&t=' + Date.now());
             const textKas = await resKas.text();
             if (!textKas.includes("<html")) {
                 const rowsKas = parseCSV(textKas);
@@ -549,7 +549,7 @@
                 let saldoAkhir = 0;
 
                 const sekarang = new Date();
-                const blnSekarang = sekarang.getMonth(); // 0-11
+                const blnSekarang = sekarang.getMonth(); // 0-11 (Oktober = 9)
                 const thnSekarang = sekarang.getFullYear(); // 2026
 
                 for (let i = 1; i < rowsKas.length; i++) {
