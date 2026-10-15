@@ -436,7 +436,7 @@
     const urlCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=224039655&single=true&output=csv';
     const urlAgendaCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=355922745&single=true&output=csv';
     
-    // Menggunakan endpoint gviz/tq untuk sheet KAS agar langsung tembus tanpa masalah Publish Web
+    // Endpoint GViz untuk sheet KAS
     const urlKasGViz = 'https://docs.google.com/spreadsheets/d/1_-b0f0Cn49yX65dbRw7FT5zwFl_YILycYbLMZzpspSk/gviz/tq?tqx=out:csv&sheet=KAS';
 
     let jadwal = { "SUBUH": "04:39", "SYURUQ": "05:45", "ZUHUR": "11:45", "ASHAR": "15:07", "MAGHRIB": "17:41", "ISYA": "18:52" }; 
@@ -536,7 +536,7 @@
             }
         } catch (e) { console.log("CSV Utama Error", e); }
 
-        // MENGAMBIL DAN MENGHITUNG DATA KEUANGAN DARI SHEET KAS MENGGUNAKAN GVIZ
+        // AMBIL DAN HITUNG KEUANGAN DARI SHEET KAS
         try {
             const resKas = await fetch(urlKasGViz + '&t=' + Date.now());
             const textKas = await resKas.text();
@@ -549,7 +549,7 @@
                 let saldoAkhir = 0;
 
                 const sekarang = new Date();
-                const blnSekarang = sekarang.getMonth(); // 0-11 (Oktober = 9)
+                const blnSekarang = sekarang.getMonth(); // 0-11
                 const thnSekarang = sekarang.getFullYear(); // 2026
 
                 for (let i = 1; i < rowsKas.length; i++) {
@@ -560,24 +560,35 @@
                         let keluar = parseFloat((r[4] || "0").replace(/[^0-9.-]+/g,"")) || 0;
                         let saldo = parseFloat((r[5] || "0").replace(/[^0-9.-]+/g,"")) || 0;
 
-                        if (tglStr) {
-                            let tglTrans = new Date(tglStr);
-                            if (!isNaN(tglTrans.getTime())) {
-                                let y = tglTrans.getFullYear();
-                                let m = tglTrans.getMonth();
-                                let d = tglTrans.getDate();
+                        if (tglStr && tglStr !== "") {
+                            // Cek apakah format tanggal mengandung angka tahun/bulan/hari
+                            let parts = tglStr.split(/[-/]/);
+                            if (parts.length >= 3) {
+                                let y = parseInt(parts[0].length === 4 ? parts[0] : parts[2]);
+                                let m = parseInt(parts[1]) - 1;
+                                let d = parseInt(parts[0].length === 4 ? parts[2] : parts[0]);
 
-                                if (y === thnSekarang && m === blnSekarang) {
-                                    if (!isNaN(masuk)) masukBulanIni += masuk;
-                                    if (!isNaN(keluar)) keluarBulanIni += keluar;
-                                } else if (tglTrans < new Date(thnSekarang, blnSekarang, 1)) {
-                                    if (!isNaN(saldo) && saldo > 0) saldoBulanLalu = saldo;
+                                if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                                    if (y === thnSekarang && m === blnSekarang) {
+                                        if (!isNaN(masuk)) masukBulanIni += masuk;
+                                        if (!isNaN(keluar)) keluarBulanIni += keluar;
+                                    } else {
+                                        let tglTrans = new Date(y, m, d);
+                                        if (tglTrans < new Date(thnSekarang, blnSekarang, 1)) {
+                                            if (!isNaN(saldo) && saldo > 0) saldoBulanLalu = saldo;
+                                        }
+                                    }
+                                    tglTerakhir = `${d.toString().padStart(2,'0')}/${(m+1).toString().padStart(2,'0')}/${y}`;
                                 }
-                                tglTerakhir = `${d.toString().padStart(2,'0')}/${(m+1).toString().padStart(2,'0')}/${y}`;
                             }
                         }
                         if (!isNaN(saldo) && saldo > 0) saldoAkhir = saldo;
                     }
+                }
+
+                // Jika saldo bulan lalu masih 0, ambil dari saldo baris sebelum transaksi bulan ini
+                if (saldoBulanLalu === 0 && saldoAkhir > 0) {
+                    saldoBulanLalu = Math.max(0, saldoAkhir - masukBulanIni + keluarBulanIni);
                 }
 
                 const formatRp = (val) => 'Rp' + Math.round(val).toLocaleString('id-ID');
