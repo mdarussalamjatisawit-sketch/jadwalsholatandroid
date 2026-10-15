@@ -167,21 +167,27 @@
         .tbl-keuangan {
             width: 100%;
             border-collapse: collapse;
-            font-size: clamp(0.68rem, 1.35vw, 0.92rem);
+            font-size: clamp(0.7rem, 1.4vw, 0.95rem);
             font-weight: 800;
             white-space: nowrap;
         }
         .tbl-keuangan td {
-            padding: 5px 6px;
+            padding: 5px 8px;
             border-bottom: 1px solid rgba(0,0,0,0.15);
         }
+        /* Kolom 1 (Label) selebar 48% */
+        .tbl-keuangan td:nth-child(1) {
+            width: 48%;
+            text-align: left;
+        }
+        /* Kolom 2 (Nilai/Nominal) selebar 52% rata kanan */
         .tbl-keuangan td:nth-child(2) {
+            width: 52%;
             text-align: right;
-            padding-right: 4px;
         }
         
         .tbl-keuangan tr.total-row td {
-            font-size: clamp(0.75rem, 1.5vw, 1rem);
+            font-size: clamp(0.78rem, 1.55vw, 1.05rem);
             color: #000000 !important;
             font-weight: 900;
             background-color: #ffd700 !important;
@@ -369,24 +375,24 @@
             <div class="card-b-custom">
                 <table class="tbl-keuangan">
                     <tr>
-                        <td style="text-align: left;">PER TANGGAL</td>
-                        <td style="text-align: right;" id="kas-tgl">-</td>
+                        <td>PER TANGGAL</td>
+                        <td id="kas-tgl">-</td>
                     </tr>
                     <tr>
-                        <td style="text-align: left;">SALDO BULAN LALU</td>
-                        <td style="text-align: right;" id="kas-saldo-lalu">Rp0</td>
+                        <td>SALDO BULAN LALU</td>
+                        <td id="kas-saldo-lalu">Rp0</td>
                     </tr>
                     <tr>
-                        <td style="text-align: left;">PEMASUKAN BULAN INI</td>
-                        <td style="text-align: right;" id="kas-in">Rp0</td>
+                        <td>PEMASUKAN BULAN INI</td>
+                        <td id="kas-in">Rp0</td>
                     </tr>
                     <tr>
-                        <td style="text-align: left;">PENGELUARAN BULAN INI</td>
-                        <td style="text-align: right;" id="kas-out">Rp0</td>
+                        <td>PENGELUARAN BULAN INI</td>
+                        <td id="kas-out">Rp0</td>
                     </tr>
                     <tr class="total-row">
-                        <td style="text-align: left;">SALDO AKHIR</td>
-                        <td style="text-align: right;" id="kas-saldo">Rp0</td>
+                        <td>SALDO AKHIR</td>
+                        <td id="kas-saldo">Rp0</td>
                     </tr>
                 </table>
             </div>
@@ -435,8 +441,6 @@
     
     const urlCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=224039655&single=true&output=csv';
     const urlAgendaCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS2pXtcn5uyLwqeOsurcrr7F5HyQWD0sRpeX2kkOPwLbfcKhzj2C74XGeIzEFz8fyTRAl03nq-QY3ip/pub?gid=355922745&single=true&output=csv';
-    
-    // Endpoint GViz untuk sheet KAS
     const urlKasGViz = 'https://docs.google.com/spreadsheets/d/1_-b0f0Cn49yX65dbRw7FT5zwFl_YILycYbLMZzpspSk/gviz/tq?tqx=out:csv&sheet=KAS';
 
     let jadwal = { "SUBUH": "04:39", "SYURUQ": "05:45", "ZUHUR": "11:45", "ASHAR": "15:07", "MAGHRIB": "17:41", "ISYA": "18:52" }; 
@@ -490,6 +494,11 @@
     }, 4000);
 
     async function muatData() {
+        // Atur Per Tanggal sesuai tanggal hari ini secara otomatis
+        const sekarangSys = new Date();
+        const tglHariIni = `${sekarangSys.getDate().toString().padStart(2,'0')}/${(sekarangSys.getMonth()+1).toString().padStart(2,'0')}/${sekarangSys.getFullYear()}`;
+        document.getElementById('kas-tgl').innerText = tglHariIni;
+
         try {
             const res = await fetch(urlCSV + '&t=' + Date.now());
             const text = await res.text();
@@ -542,15 +551,13 @@
             const textKas = await resKas.text();
             if (!textKas.includes("<html")) {
                 const rowsKas = parseCSV(textKas);
-                let tglTerakhir = "-";
                 let saldoBulanLalu = 0;
                 let masukBulanIni = 0;
                 let keluarBulanIni = 0;
                 let saldoAkhir = 0;
 
-                const sekarang = new Date();
-                const blnSekarang = sekarang.getMonth(); // 0-11
-                const thnSekarang = sekarang.getFullYear(); // 2026
+                const blnSekarang = sekarangSys.getMonth(); 
+                const thnSekarang = sekarangSys.getFullYear(); 
 
                 for (let i = 1; i < rowsKas.length; i++) {
                     let r = rowsKas[i];
@@ -561,7 +568,6 @@
                         let saldo = parseFloat((r[5] || "0").replace(/[^0-9.-]+/g,"")) || 0;
 
                         if (tglStr && tglStr !== "") {
-                            // Cek apakah format tanggal mengandung angka tahun/bulan/hari
                             let parts = tglStr.split(/[-/]/);
                             if (parts.length >= 3) {
                                 let y = parseInt(parts[0].length === 4 ? parts[0] : parts[2]);
@@ -578,7 +584,6 @@
                                             if (!isNaN(saldo) && saldo > 0) saldoBulanLalu = saldo;
                                         }
                                     }
-                                    tglTerakhir = `${d.toString().padStart(2,'0')}/${(m+1).toString().padStart(2,'0')}/${y}`;
                                 }
                             }
                         }
@@ -586,13 +591,11 @@
                     }
                 }
 
-                // Jika saldo bulan lalu masih 0, ambil dari saldo baris sebelum transaksi bulan ini
                 if (saldoBulanLalu === 0 && saldoAkhir > 0) {
                     saldoBulanLalu = Math.max(0, saldoAkhir - masukBulanIni + keluarBulanIni);
                 }
 
                 const formatRp = (val) => 'Rp' + Math.round(val).toLocaleString('id-ID');
-                document.getElementById('kas-tgl').innerText = tglTerakhir;
                 document.getElementById('kas-saldo-lalu').innerText = formatRp(saldoBulanLalu);
                 document.getElementById('kas-in').innerText = formatRp(masukBulanIni);
                 document.getElementById('kas-out').innerText = formatRp(keluarBulanIni);
