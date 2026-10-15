@@ -152,13 +152,15 @@
             text-transform: uppercase; 
             letter-spacing: 1px;
         }
-        .card-keuangan { width: 38%; }
-        .card-agenda { width: 58%; }
+        /* Lebar card keuangan diperbesar sedikit agar nominal tidak terpotong */
+        .card-keuangan { width: 42%; }
+        .card-agenda { width: 56%; }
+        
         .card-b-custom {
             background: rgba(255, 255, 255, 0.88);
             color: #000;
             flex: 1;
-            padding: 10px;
+            padding: 8px 10px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -166,16 +168,17 @@
         .tbl-keuangan {
             width: 100%;
             border-collapse: collapse;
-            font-size: clamp(0.75rem, 1.6vw, 1rem);
+            font-size: clamp(0.7rem, 1.45vw, 0.98rem);
             font-weight: 800;
+            white-space: nowrap;
         }
         .tbl-keuangan td {
-            padding: 4px 8px;
+            padding: 5px 6px;
             border-bottom: 1px solid rgba(0,0,0,0.15);
         }
         
         .tbl-keuangan tr.total-row td {
-            font-size: clamp(0.85rem, 1.8vw, 1.1rem);
+            font-size: clamp(0.75rem, 1.6vw, 1.05rem);
             color: #000000 !important;
             font-weight: 900;
             background-color: #ffd700 !important;
@@ -526,22 +529,19 @@
                     document.getElementById('tgl-hijriah').innerText = teksHijriah.trim();
                 }
 
-                // AMBIL DATA KEUANGAN DARI KOLOM REKAP DI SHEET UTAMA (JAM SHOLAT KHGT)
-                // Kolom Index: 8 = TANGGAL, 9 = PEMASUKAN, 10 = PENGELUARAN, 11 = SALDO AKHIR
                 if (b2.length >= 12) {
                     let tglKas = (b2[8] || "-").trim();
                     let inKas  = (b2[9] || "0").trim();
                     let outKas = (b2[10] || "0").trim();
                     let salKas = (b2[11] || "0").trim();
 
-                    // Format angka ke Rupiah
                     const formatRp = (val) => {
                         let num = parseFloat(val.toString().replace(/[^0-9.-]+/g,"")) || 0;
                         return 'Rp' + Math.round(num).toLocaleString('id-ID');
                     };
 
                     document.getElementById('kas-tgl').innerText = tglKas.substring(0, 10);
-                    document.getElementById('kas-saldo-lalu').innerText = "Rp0"; // Dapat disesuaikan jika ada kolom saldo lalu di sheet
+                    document.getElementById('kas-saldo-lalu').innerText = "Rp0";
                     document.getElementById('kas-in').innerText = formatRp(inKas);
                     document.getElementById('kas-out').innerText = formatRp(outKas);
                     document.getElementById('kas-saldo').innerText = formatRp(salKas);
